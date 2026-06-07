@@ -61,6 +61,11 @@ void loop() {
     String playerName = accountInfo.substring(nameStart, accountInfo.indexOf(" ", nameStart));
     String credits = accountInfo.substring(creditsStart, accountInfo.indexOf(" ", creditsStart));
     String rank = accountInfo.substring(rankStart, accountInfo.indexOf(" ", rankStart));
+
+    // Read the old values
+    String oldName = myReader.readData(3);
+    String oldCredits = myReader.readData(5);
+    String oldRank = myReader.readData(8);
     
     // Write data to tag
     Serial.println("Writing Data to Slot 1...");
@@ -77,20 +82,33 @@ void loop() {
     Serial.print("cardData: ");
     Serial.println(cardData);
 
-    // Parse the data inside the tag and show it on the oled screen
-    myReader.displayToOled(1);
-
-    delay(500); // Wait a moment to see the updated credits on the Serial Monitor
-    myReader.updateCredits(50); // Add 50 credits to the current value in slot 1
+    String newCredits = myReader.updateCredits(50); // Add 50 credits to the current value in slot 1
     myReader.updateName("Person"); // Update the player name in slot 1
     myReader.printAllData();
     
-    myReader.displayToOled(1); // Refresh the screen to show the updated credits
-    
     // Safely halt the tag
     myReader.haltTag();
-    delay(5000); 
+    Serial.println("Card halted. User can safely remove it.");
 
+    // OLED SEQUENCE 
+    if (newCredits != "") {
+        // Show the formatted BEFORE state
+        myReader.displayCachedData(oldName, oldCredits, oldRank);
+        delay(2500); // Leave it on screen for 2.5 seconds
+
+        // Show the transition message
+        myReader.printToOled("\n   INFO UPDATED!   ");
+        delay(1500); // Leave message for 1.5 seconds
+
+        // Show the formatted AFTER state
+        myReader.displayCachedData(oldName, newCredits, oldRank);
+        delay(4000); // Leave final stats up for 4 seconds
+        
+    } else {
+        // Fallback if the card was removed too early during step 3
+        myReader.printToOled("Update Failed.\nTry Again.");
+        delay(3000);
+    }
     // Return to the waiting screen
     myReader.showIdleScreen();
 }

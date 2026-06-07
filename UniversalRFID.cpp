@@ -163,28 +163,31 @@ void UniversalRFID::printAllData() {
     Serial.println("======================================");
 }
 
-void UniversalRFID::updateName(String newName) {
+String UniversalRFID::updateName(String newName) {
     String currentData = readData(userSlotPage); // Read the current data from the user slot
     
     if (currentData == "") {
         Serial.println("Error: Unable to read current data for editing.");
-        return;
+        return "";
     }
 
     // Write the updated data back to the tag
     if (writeData(userSlotPage, newName)) {
         Serial.println("Player name updated successfully!");
+        return newName;
     } else {
         Serial.println("Error: Failed to update player name.");
+        return "";
     }
 }
 
-void UniversalRFID::updateCredits(int newCredits) {
+String UniversalRFID::updateCredits(int newCredits) {
     String currentData = readData(creditSlotPage); // Read the current data from the credit slot
     
     if (currentData == "") {
         Serial.println("Error: Unable to read current data for editing.");
-        return;
+        return "";
+
     }
     
     Serial.print("Current Credits: ");
@@ -198,8 +201,10 @@ void UniversalRFID::updateCredits(int newCredits) {
     // Write the updated data back to the tag
     if (writeData(creditSlotPage, sCredits)) {
         Serial.println("Credits updated successfully!");
+        return sCredits;
     } else {
         Serial.println("Error: Failed to update credits.");
+        return "";
     }
 }
 
@@ -429,4 +434,23 @@ void UniversalRFID::printToOled(String message) {
     oled->setCursor(0,0);
     oled->println(message);
     oled->display();
+}
+
+void UniversalRFID::displayCachedData(String name, String credits, String rank) {
+    if (oled == nullptr) return;
+
+    oled->clearDisplay(); 
+    oled->setCursor(0,0); 
+    oled->setTextSize(1);
+    oled->setTextColor(SSD1306_WHITE);
+    
+    oled->println("User Info:");
+    oled->println("---------------------");
+
+    // Print the passed variables
+    oled->print("PLAYER: "); oled->println(name);
+    oled->print("CREDITS: "); oled->println(credits);
+    oled->print("RANK: "); oled->println(rank);
+    
+    oled->display(); 
 }

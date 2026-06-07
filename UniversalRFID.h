@@ -25,15 +25,16 @@ class UniversalRFID {
         void printAllData();
         String readData(int slotNumber);
 
-        void updateCredits(int newCredits);
-        void updateName(String newName);
-        void updateRank(String newRank);
+        String updateCredits(int newCredits);
+        String updateName(String newName);
+        String updateRank(String newRank);
 
         void attachDisplay(Adafruit_SSD1306* displayOled); 
         
         void showIdleScreen();
         void displayToOled(int slotNumber);
         void printToOled(String message);
+        void displayCachedData(String name, String credits, String rank);   // Add this to handle data when the card is no longer present
 
     private:
         MFRC522 rfid;
