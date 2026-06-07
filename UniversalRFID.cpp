@@ -163,6 +163,9 @@ void UniversalRFID::printAllData() {
     Serial.println("======================================");
 }
 
+// @brief Updates the player's name stored on the tag.
+// @param newName The new name to be stored on the tag.
+// @return The updated name if the operation was successful, or an empty string if there was an error.
 String UniversalRFID::updateName(String newName) {
     String currentData = readData(userSlotPage); // Read the current data from the user slot
     
@@ -181,6 +184,9 @@ String UniversalRFID::updateName(String newName) {
     }
 }
 
+// @brief Updates the player's rank stored on the tag.
+// @param newCredits credits to be added to the scanned tag.
+// @return The credits added to the tag
 String UniversalRFID::updateCredits(int newCredits) {
     String currentData = readData(creditSlotPage); // Read the current data from the credit slot
     
@@ -385,6 +391,7 @@ void UniversalRFID::showIdleScreen() {
 
 // @brief Displays information of user to screen on the attached OLED, showing the data from a specific slot on the tag in a formatted manner.
 // @param slotNumber The slot number to read from and display (1-based index).
+// @note An RFID tag must be scanned and active for this function to work.
 void UniversalRFID::displayToOled(int slotNumber) {
     if (oled == nullptr) return;
 
@@ -427,6 +434,8 @@ void UniversalRFID::displayToOled(int slotNumber) {
     oled->display(); // Push to the physical screen
 }
 
+// @brief Prints a custom message to the attached OLED screen. Clears the screen before displaying the new message.
+// @param message The string message to be displayed on the OLED screen.
 void UniversalRFID::printToOled(String message) {
     if (oled == nullptr) return;
 
@@ -436,6 +445,12 @@ void UniversalRFID::printToOled(String message) {
     oled->display();
 }
 
+// @brief Displays cached user data (name, credits, rank) on the attached OLED screen. 
+// This is used to show information even when the card is no longer present.
+// @param name The player's name to display.
+// @param credits The player's credits to display.
+// @param rank The player's rank to display.
+// @note This function is intended to be used when the card has been removed, so it does not attempt to read from the tag and instead relies on passed-in data.
 void UniversalRFID::displayCachedData(String name, String credits, String rank) {
     if (oled == nullptr) return;
 
