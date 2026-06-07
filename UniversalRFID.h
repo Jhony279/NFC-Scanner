@@ -15,6 +15,7 @@ class UniversalRFID {
         void begin();
         bool scanForTag();
         void haltTag();
+        void setPages(int uSlot, int cSlot, int rSlot);
 
         String getUID();
         String getTagType();
@@ -24,10 +25,15 @@ class UniversalRFID {
         void printAllData();
         String readData(int slotNumber);
 
+        void updateCredits(int newCredits);
+        void updateName(String newName);
+        void updateRank(String newRank);
+
         void attachDisplay(Adafruit_SSD1306* displayOled); 
         
         void showIdleScreen();
-        void showAccessGranted(int slotNumber);
+        void displayToOled(int slotNumber);
+        void printToOled(String message);
 
     private:
         MFRC522 rfid;
@@ -37,6 +43,11 @@ class UniversalRFID {
         // Constants
         const byte LARGE_PAYLOAD_SIZE = 48;
         const int ERROR_DELAY_MS = 1000;
+
+        // Pages
+        int userSlotPage;
+        int creditSlotPage;
+        int rankSlotPage;
 
         // A pointer to hold our attached screen
         Adafruit_SSD1306* oled = nullptr;

@@ -1,6 +1,10 @@
 #include "UniversalRFID.h"
 
-UniversalRFID::UniversalRFID(byte ssPin, byte rstPin) : rfid(ssPin, rstPin) {}
+UniversalRFID::UniversalRFID(byte ssPin, byte rstPin) : rfid(ssPin, rstPin) {
+    userSlotPage = 3;   // Default page for user data (e.g., player name)
+    creditSlotPage = 5; // Default page for credits
+    rankSlotPage = 8;   // Default page for rank
+}
 
 // @brief Initializes the RFID reader and sets up the default key for authentication.
 //      Must be called in setup() before any other operations.
@@ -28,6 +32,16 @@ bool UniversalRFID::scanForTag() {
 void UniversalRFID::haltTag() {
     rfid.PICC_HaltA();
     rfid.PCD_StopCrypto1();
+}
+
+// @brief Sets the page numbers for user data, credits, and rank based on the tag type.
+// @param uSlot The page number for user data (e.g., player name).
+// @param cSlot The page number for credits.
+// @param rSlot The page number for rank.
+void UniversalRFID::setPages(int uSlot, int cSlot, int rSlot) {
+    userSlotPage = uSlot;
+    creditSlotPage = cSlot;
+    rankSlotPage = rSlot;
 }
 
 // @brief Retrieves the UID of the currently active tag as a hexadecimal string.
@@ -147,6 +161,46 @@ void UniversalRFID::printAllData() {
     }
     
     Serial.println("======================================");
+}
+
+void UniversalRFID::updateName(String newName) {
+    String currentData = readData(userSlotPage); // Read the current data from the user slot
+    
+    if (currentData == "") {
+        Serial.println("Error: Unable to read current data for editing.");
+        return;
+    }
+
+    // Write the updated data back to the tag
+    if (writeData(userSlotPage, newName)) {
+        Serial.println("Player name updated successfully!");
+    } else {
+        Serial.println("Error: Failed to update player name.");
+    }
+}
+
+void UniversalRFID::updateCredits(int newCredits) {
+    String currentData = readData(creditSlotPage); // Read the current data from the credit slot
+    
+    if (currentData == "") {
+        Serial.println("Error: Unable to read current data for editing.");
+        return;
+    }
+    
+    Serial.print("Current Credits: ");
+    Serial.println(currentData);
+
+    // Conversion from String to int for manipulation
+    int currentCredits = currentData.toInt();
+    currentCredits += newCredits; // Update the credits to the new value
+    String sCredits = String(currentCredits); // Convert back to String for writing
+    
+    // Write the updated data back to the tag
+    if (writeData(creditSlotPage, sCredits)) {
+        Serial.println("Credits updated successfully!");
+    } else {
+        Serial.println("Error: Failed to update credits.");
+    }
 }
 
 // ==========================================
@@ -324,40 +378,55 @@ void UniversalRFID::showIdleScreen() {
     oled->display();
 }
 
-// @brief Displays an "Access Granted" screen on the attached OLED, showing the data from a specific slot on the tag in a formatted manner.
+// @brief Displays information of user to screen on the attached OLED, showing the data from a specific slot on the tag in a formatted manner.
 // @param slotNumber The slot number to read from and display (1-based index).
-void UniversalRFID::showAccessGranted(int slotNumber) {
+void UniversalRFID::displayToOled(int slotNumber) {
     if (oled == nullptr) return;
 
-    // 1. Grab the raw data from the slot
-    String cardData = readData(slotNumber);
+    // Get the raw data from the tag for the specified slot
+    String userName = readData(userSlotPage);
+    String credits = readData(creditSlotPage);
+    String rank = readData(rankSlotPage);
 
     // 2. Find the labels
-    int playerStart = cardData.indexOf("PLAYER:");
-    int creditsStart = cardData.indexOf("CREDITS:");
-    int rankStart = cardData.indexOf("RANK:");
+    int playerStart = userName.length() > 0 ? 0 : -1; // If userName is empty, set to -1
+    int creditsStart = credits.toInt() ? 0 : -1; // If credits is empty or non-numeric, set to -1
+    int rankStart = rank.length() > 0 ? 0 : -1; // If rank is empty, set to -1
 
     // 3. Draw the UI Frame
     oled->clearDisplay(); 
     oled->setCursor(0,0); 
-    oled->println("ACCESS GRANTED");
+    oled->println("User Info:");
     oled->println("---------------------");
 
     // 4. Slice and draw the data rows
     if (playerStart != -1 && creditsStart != -1 && rankStart != -1) {
-        String playerLine = cardData.substring(playerStart, creditsStart);
-        String creditsLine = cardData.substring(creditsStart, rankStart);
-        String rankLine = cardData.substring(rankStart);
-        rankLine.trim(); 
+        String playerLine = userName;
+        String creditsLine = credits;
+        String rankLine = rank; 
 
+        oled->setTextSize(1);
+        oled->setTextColor(SSD1306_WHITE);
         oled->println(playerLine);
         oled->println(creditsLine);
-        oled->println(rankLine);
+        // oled->println(rankLine); for now
     } else {
         // Fallback for empty or corrupted tags
+        // oled->println("UNKNOWN DATA FORMAT/CARD REMOVED TOO SOON");
         oled->println("UNKNOWN DATA FORMAT");
-        oled->println(cardData);
+        oled->println(userName);
+        oled->println(credits);
+        oled->println(rank);
     }
     
     oled->display(); // Push to the physical screen
+}
+
+void UniversalRFID::printToOled(String message) {
+    if (oled == nullptr) return;
+
+    oled->clearDisplay();
+    oled->setCursor(0,0);
+    oled->println(message);
+    oled->display();
 }

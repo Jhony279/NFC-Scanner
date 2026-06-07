@@ -23,9 +23,6 @@ void setup() {
     while (!Serial);
 
     myReader.begin();
-    
-    Serial.println("Hardware Agnostic System Ready.");
-    Serial.println("Tap ANY tag...");
 
     // Initialize OLED
     // SSD1306_SWITCHCAPVCC tells the screen to generate its own 3.3V internal power
@@ -34,13 +31,12 @@ void setup() {
         for(;;); // Freeze the code here if the screen is dead
     }
     
-    // MAGIC STEP: Hand the screen over to the library!
+    // Hand the screen over to the adafruit library
     myReader.attachDisplay(&display);
 
     // Tell the library to draw the waiting screen
     myReader.showIdleScreen();
     
-    display.println("System Ready.");
     display.println("Waiting for tag...");
 }
 
@@ -54,17 +50,23 @@ void loop() {
     Serial.print("Type: ");
     Serial.println(myReader.getTagType());
     
-    // Build your dynamic string max 48 chars (fits in one slot)
-    String accountInfo = "PLAYER:Johnathan CREDITS:150 RANK:PRO";
+    // test string to write to the tag
+    String accountInfo = "hkjkjk PLAYER:Pearssooon njnj CREDITS:11150 RANK:PRO";
     // TODO: seperate name & credits into different slots
+
+    // Parse the string to extract the player's name and credits
+    int nameStart = accountInfo.indexOf("PLAYER:") + 7;
+    int creditsStart = accountInfo.indexOf("CREDITS:") + 8;
+    int rankStart = accountInfo.indexOf("RANK:") + 5;
+    String playerName = accountInfo.substring(nameStart, accountInfo.indexOf(" ", nameStart));
+    String credits = accountInfo.substring(creditsStart, accountInfo.indexOf(" ", creditsStart));
+    String rank = accountInfo.substring(rankStart, accountInfo.indexOf(" ", rankStart));
     
-    // Write data to "Slot 1" (Auto-routes to Sector 1 or Page 4)
+    // Write data to tag
     Serial.println("Writing Data to Slot 1...");
-    myReader.writeData(1, accountInfo); 
-    
-    // Read "Slot 1" back
-    Serial.println("\nReading Slot 1...");
-    myReader.printData(1); 
+    myReader.writeData(3, playerName);
+    myReader.writeData(5, credits);
+    myReader.writeData(8, rank);
     
     // Print all data on the tag for verification
     Serial.println("All Data on Tag:");
@@ -72,9 +74,18 @@ void loop() {
     
     // Grab the string directly from Slot 1
     String cardData = myReader.readData(1);
+    Serial.print("cardData: ");
+    Serial.println(cardData);
 
-    // Automatically parse and draw Slot 1 to the OLED!
-    myReader.showAccessGranted(1);
+    // Parse the data inside the tag and show it on the oled screen
+    myReader.displayToOled(1);
+
+    delay(500); // Wait a moment to see the updated credits on the Serial Monitor
+    myReader.updateCredits(50); // Add 50 credits to the current value in slot 1
+    myReader.updateName("Person"); // Update the player name in slot 1
+    myReader.printAllData();
+    
+    myReader.displayToOled(1); // Refresh the screen to show the updated credits
     
     // Safely halt the tag
     myReader.haltTag();
@@ -83,12 +94,3 @@ void loop() {
     // Return to the waiting screen
     myReader.showIdleScreen();
 }
-
-// // Use it programmatically!
-// if (cardData.indexOf("RANK:PRO") != -1) {
-//     Serial.println("Welcome back, VIP User!");
-//     // Turn on green LED...
-// } else {
-//     Serial.println("Standard Access.");
-//     // Turn on standard LED...
-// }
